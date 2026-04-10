@@ -212,12 +212,18 @@ body.au{padding-top:50px}
   <div class="tg"><button onclick="X('bold')"><b>B</b></button><button onclick="X('italic')"><i>I</i></button><button onclick="X('underline')"><u>U</u></button></div>
   <div class="tg"><button onclick="X('formatBlock','h2')">H2</button><button onclick="X('formatBlock','h3')">H3</button><button onclick="X('formatBlock','p')">P</button></div>
   <div class="tg"><button onclick="X('insertUnorderedList')">List</button><button onclick="X('removeFormat')">Clear</button></div>
+  <div class="tg" title="Text Color">
+    <button style="color:#c53030" onclick="X('foreColor','#c53030')" title="Red text">A</button>
+    <button style="color:#2b6cb0" onclick="X('foreColor','#2b6cb0')" title="Blue text">A</button>
+    <button style="color:#276749" onclick="X('foreColor','#276749')" title="Green text">A</button>
+    <button style="color:#fff" onclick="X('foreColor','#1a2744')" title="Default text">A</button>
+  </div>
   <div class="tg" title="Highlight">
-    <button class="clr clr-y" onclick="hl('hl-y')" title="Yellow"></button>
-    <button class="clr clr-g" onclick="hl('hl-g')" title="Green"></button>
-    <button class="clr clr-r" onclick="hl('hl-r')" title="Red"></button>
-    <button class="clr clr-b" onclick="hl('hl-b')" title="Blue"></button>
-    <button class="clr clr-x" onclick="hlClear()" title="Remove highlight">x</button>
+    <button class="clr clr-y" onclick="hl('hl-y')" title="Yellow highlight"></button>
+    <button class="clr clr-g" onclick="hl('hl-g')" title="Green highlight"></button>
+    <button class="clr clr-r" onclick="hl('hl-r')" title="Red highlight"></button>
+    <button class="clr clr-b" onclick="hl('hl-b')" title="Blue highlight"></button>
+    <button class="clr clr-x" onclick="hlClear()" title="Remove">x</button>
   </div>
   <div class="tg">
     <button onclick="addComment()" title="Add comment" style="font-size:16px">💬</button>
