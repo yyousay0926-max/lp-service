@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パーソナルAI記事生成サービス</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1a2744;--navy-l:#2a3a5c;--txt:#1a2744;--txt-l:#4a5568;--bg:#fff;--bg2:#f8f9fa;--bdr:#e2e8f0;--acc:#3182ce;--acc-l:#ebf4ff;--red:#c53030;--red-bg:#fff5f5;--grn:#276749;--grn-bg:#f0fff4;--sh:0 1px 3px rgba(0,0,0,.08);--sh2:0 4px 20px rgba(0,0,0,.1);--r:8px;--mw:780px;--f:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif}
+html{scroll-behavior:smooth}
+body{font-family:var(--f);color:var(--txt);background:var(--bg);line-height:1.9;font-size:16px;-webkit-font-smoothing:antialiased}
+
+/* Passcode */
+#lock{position:fixed;inset:0;z-index:9999;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff}
+#lock.off{display:none}
+#lock h2{font-size:20px;font-weight:600;margin-bottom:24px}
+#lock .f{display:flex;gap:12px}
+#lock input{padding:12px 20px;font-size:16px;border:2px solid rgba(255,255,255,.3);border-radius:6px;background:rgba(255,255,255,.1);color:#fff;outline:none;width:240px;font-family:inherit}
+#lock input:focus{border-color:rgba(255,255,255,.7)}
+#lock input::placeholder{color:rgba(255,255,255,.4)}
+#lock button{padding:12px 28px;font-size:15px;font-weight:700;border:none;border-radius:6px;background:#fff;color:var(--navy);cursor:pointer;font-family:inherit}
+#lock .err{color:#fc8181;margin-top:12px;font-size:14px;min-height:20px}
+#lock .co{position:absolute;bottom:32px;font-size:13px;opacity:.4}
+
+/* LP hidden */
+#lp{display:none}
+#lp.on{display:block}
+
+/* Editable */
+[contenteditable="true"]{outline:none;border-radius:4px;transition:box-shadow .2s,background .2s;cursor:text}
+[contenteditable="true"]:hover{box-shadow:0 0 0 2px rgba(49,130,206,.2)}
+[contenteditable="true"]:focus{box-shadow:0 0 0 2px var(--acc);background:var(--acc-l)}
+
+/* Img edit */
+.ei{position:relative;cursor:pointer;overflow:hidden;border-radius:var(--r)}
+.ei::after{content:"\30AF\30EA\30C3\30AF\3067\753B\50CF\3092\5DEE\3057\66FF\3048";position:absolute;bottom:0;left:0;right:0;background:rgba(26,39,68,.85);color:#fff;text-align:center;padding:10px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none}
+.ei:hover::after{opacity:1}
+.ei img{display:block;width:100%;height:auto;transition:transform .3s}
+.ei:hover img{transform:scale(1.02)}
+
+/* Toolbar */
+#tb{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--navy);color:#fff;display:flex;align-items:center;gap:6px;padding:8px 16px;box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:13px}
+#tb .tg{display:flex;gap:2px;align-items:center}
+#tb .tg+.tg{border-left:1px solid rgba(255,255,255,.2);padding-left:8px;margin-left:2px}
+#tb button{background:transparent;border:none;color:#fff;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:14px;font-family:inherit;transition:background .15s}
+#tb button:hover{background:rgba(255,255,255,.15)}
+#tb .tt{font-weight:700;margin-right:auto;font-size:14px}
+#tb .ex{background:#fff;color:var(--navy);font-weight:700;padding:6px 16px}
+#tb .ex:hover{background:#e2e8f0}
+
+/* Sections */
+.s{position:relative;padding:80px 24px}
+.s:nth-child(even){background:var(--bg2)}
+.s .in{max-width:var(--mw);margin:0 auto}
+.s::before{content:attr(data-l);position:absolute;top:12px;left:12px;background:var(--navy);color:#fff;font-size:11px;padding:3px 10px;border-radius:3px;opacity:.3;pointer-events:none;transition:opacity .2s}
+.s:hover::before{opacity:.65}
+
+/* Hero */
+.hero{padding:140px 24px 100px;text-align:center;background:linear-gradient(170deg,var(--navy),var(--navy-l));color:#fff;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:50px;background:var(--bg);clip-path:ellipse(55% 100% at 50% 100%)}
+.hero h1{font-size:clamp(26px,4.5vw,40px);font-weight:900;line-height:1.45;margin-bottom:24px;letter-spacing:-.02em}
+.hero .sub{font-size:clamp(14px,2.2vw,18px);line-height:1.75;opacity:.85;max-width:580px;margin:0 auto}
+.hero .hi{margin-top:40px;max-width:560px;margin-left:auto;margin-right:auto}
+.hero .ei{border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.3)}
+
+/* Typography */
+h2{font-size:clamp(22px,3.5vw,30px);font-weight:800;line-height:1.45;margin-bottom:28px;color:var(--navy)}
+h3{font-size:19px;font-weight:700;margin:28px 0 14px;color:var(--navy)}
+p,li{font-size:16px;line-height:1.9;color:var(--txt-l)}
+p+p{margin-top:18px}
+
+/* Comparison */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:28px 0}
+@media(max-width:700px){.cg{grid-template-columns:1fr}}
+.cb{border-radius:var(--r);padding:24px;border:1px solid var(--bdr)}
+.cb.bad{background:var(--red-bg);border-color:rgba(197,48,48,.15)}
+.cb.good{background:var(--grn-bg);border-color:rgba(39,103,73,.15)}
+.cb .tg2{font-size:12px;font-weight:700;letter-spacing:.8px;margin-bottom:10px}
+.cb.bad .tg2{color:var(--red)}
+.cb.good .tg2{color:var(--grn)}
+.cb blockquote{font-size:15px;line-height:1.85;color:var(--txt);border:none;padding:0;margin:0}
+.cb .nt{margin-top:10px;font-size:13px;color:var(--txt-l);padding-top:10px;border-top:1px solid var(--bdr)}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
+.tbl th{background:var(--navy);color:#fff;padding:10px 14px;text-align:left;font-weight:600}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--bdr);color:var(--txt-l)}
+.tbl tr:nth-child(even) td{background:var(--bg2)}
+
+/* Stats */
+.sts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:28px 0}
+.st{text-align:center;padding:24px 12px;border-radius:var(--r);border:1px solid var(--bdr);background:#fff}
+.st .nm{font-size:34px;font-weight:900;color:var(--navy);line-height:1.2}
+.st .ds{font-size:13px;color:var(--txt-l);margin-top:6px}
+
+/* Steps */
+.sps{counter-reset:step;margin:28px 0}
+.sp{display:flex;gap:18px;padding:20px 0;border-bottom:1px solid var(--bdr)}
+.sp:last-child{border-bottom:none}
+.sp::before{counter-increment:step;content:counter(step);flex-shrink:0;width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+
+/* Pricing */
+.pc{background:#fff;border:2px solid var(--navy);border-radius:12px;padding:36px;text-align:center;max-width:440px;margin:28px auto;box-shadow:var(--sh2)}
+.pc .am{font-size:44px;font-weight:900;color:var(--navy)}
+.pc .dt{font-size:15px;color:var(--txt-l);margin-top:4px}
+.pc .il{text-align:left;margin-top:20px;padding-top:20px;border-top:1px solid var(--bdr)}
+.pc .il li{padding:5px 0 5px 22px;list-style:none;position:relative}
+.pc .il li::before{content:"\2713";position:absolute;left:0;color:var(--grn);font-weight:700}
+
+/* Cost */
+.cr{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--bdr)}
+.cr.hl{background:var(--acc-l);padding:12px 14px;border-radius:var(--r);border:2px solid var(--acc);margin-top:8px}
+.cr .n{font-weight:600}
+.cr .p{font-weight:800;font-size:17px;color:var(--navy)}
+.cr .t{font-size:13px;color:var(--txt-l)}
+
+/* Timeline */
+.tl{margin:28px 0;border-left:3px solid var(--navy);padding-left:28px}
+.ti{padding:14px 0;position:relative}
+.ti::before{content:'';position:absolute;left:-35px;top:20px;width:11px;height:11px;background:var(--navy);border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px var(--navy)}
+.ti .mo{font-weight:800;color:var(--navy);font-size:15px}
+
+/* FAQ */
+.fi{border-bottom:1px solid var(--bdr);padding:20px 0}
+.fq{font-weight:700;font-size:16px;color:var(--navy);cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.fq::after{content:"+";font-size:22px;font-weight:300;transition:transform .2s;flex-shrink:0;margin-left:12px}
+.fi.op .fq::after{transform:rotate(45deg)}
+.fa{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s}
+.fi.op .fa{max-height:500px;padding-top:14px}
+
+/* CTA */
+.cta{background:var(--navy)!important;color:#fff;text-align:center}
+.cta h2{color:#fff}
+.cta p{color:rgba(255,255,255,.8)}
+.cta-btn{display:inline-block;margin-top:28px;padding:14px 44px;background:#fff;color:var(--navy);font-size:16px;font-weight:700;border-radius:6px;text-decoration:none;transition:transform .2s,box-shadow .2s;cursor:pointer;border:none;font-family:inherit}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+
+/* Quote */
+.qt{background:var(--bg2);border-left:4px solid var(--navy);padding:18px 22px;margin:20px 0;border-radius:0 var(--r) var(--r) 0;font-size:15px;color:var(--txt);font-style:italic}
+
+/* Rule ref */
+.rf{margin-top:16px;padding:12px 16px;background:#f7fafc;border:1px solid var(--bdr);border-radius:var(--r);font-size:13px;color:var(--txt-l)}
+.rf strong{color:var(--navy)}
+
+/* Risk */
+.rc{margin:20px 0}
+.rc li{list-style:none;padding:8px 0 8px 30px;position:relative;border-bottom:1px solid var(--bdr)}
+.rc li::before{content:attr(data-n);position:absolute;left:0;top:10px;width:20px;height:20px;background:var(--navy);color:#fff;border-radius:50%;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Img area */
+.ia{margin:28px 0}
+
+/* Responsive */
+@media(max-width:600px){.s{padding:48px 16px}.hero{padding:100px 16px 72px}.sts{grid-template-columns:1fr 1fr}}
+
+.hi2{display:none}
+body.au{padding-top:50px}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--grn);color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;box-shadow:var(--sh2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:1001}
+#toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<div id="lock">
+  <h2>This page is password protected</h2>
+  <div class="f">
+    <input type="password" id="pw" placeholder="Enter passcode" autocomplete="off">
+    <button onclick="auth()">Enter</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="co">Hammock Inc.</div>
+</div>
+
+<div id="tb" style="display:none">
+  <span class="tt">LP Editor</span>
+  <div class="tg"><button onclick="X('bold')"><b>B</b></button><button onclick="X('italic')"><i>I</i></button><button onclick="X('underline')"><u>U</u></button></div>
+  <div class="tg"><button onclick="X('formatBlock','h2')">H2</button><button onclick="X('formatBlock','h3')">H3</button><button onclick="X('formatBlock','p')">P</button></div>
+  <div class="tg"><button onclick="X('insertUnorderedList')">List</button><button onclick="X('removeFormat')">Clear</button></div>
+  <div class="tg"><button class="ex" onclick="expH()">Export HTML</button><button class="ex" onclick="expT()" style="margin-left:4px">Export Text</button></div>
+</div>
+
+<div id="lp">
+
+<section class="s hero" data-l="1. Hero">
+  <div class="in">
+    <h1 contenteditable="true">あなたの言葉で書かれた記事を、<br>毎日届ける仕組みがあります。</h1>
+    <p class="sub" contenteditable="true">考え方、語り口、価値観。あなたらしさを学習した専用AIが、本人が書いたとしか思えない記事を継続的に生成します。</p>
+    <div class="hi">
+      <div class="ei" onclick="ri(this)">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='320'%3E%3Crect width='560' height='320' rx='12' fill='%23e2e8f0'/%3E%3Ctext x='280' y='155' text-anchor='middle' fill='%23718096' font-family='sans-serif' font-size='16'%3EHero Image%3C/text%3E%3Ctext x='280' y='180' text-anchor='middle' fill='%23a0aec0' font-family='sans-serif' font-size='12'%3EClick to replace%3C/text%3E%3C/svg%3E" alt="Hero">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-l="2. Empathy">
+  <div class="in">
+    <h2 contenteditable="true">伝えたいことは、毎日ある。<br>でも、書く時間がない。</h2>
+    <p contenteditable="true">日々、伝えたいことは山ほどあるはずです。でも日程は詰まる、連絡は飛んでくる、現場対応もある。「きちんとした記事を書こう」と思っても、後回しになってしまうのは無理もありません。</p>
+    <p contenteditable="true">政治ニュースは鮮度が命です。3日後に書いても、もう読んでもらえない。月に1本がやっとで、それも途切れがちになる。そんな状況に、もどかしさを感じている方は少なくないと思います。</p>
+    <p contenteditable="true">AIを使ってみた方もいらっしゃるでしょう。ChatGPTに「記事を書いて」と頼めば、それなりの文章は出ます。でも実際に使ってみると——</p>
+    <ul contenteditable="true" style="margin:14px 0 14px 20px;color:var(--txt-l)">
+      <li>「結論から言います。」で始まる</li>
+      <li>語尾が「です。です。です。」と連続する</li>
+      <li>箇条書きで7項目も8項目も並べてくる</li>
+      <li>毎回同じフレーズで締めくくる</li>
+      <li>固有名詞をぼかして「ある議員」「報道では」と一般化する</li>
+    </ul>
+    <p contenteditable="true">一見整っているけれど、誰が書いても同じに見えてしまう。2〜3本並べれば読者に気づかれます。「AIで書いてるな」と思われてしまうこと——これが一番のリスクではないでしょうか。</p>
+    <p contenteditable="true">結局、チェックと修正に時間を取られて「自分で書いた方が早い」になる。AIをうまく使って、発信を続けられている方はまだほとんどいないのが実情です。</p>
+  </div>
+</section>
+
+<section class="s" data-l="3. Character Reproduction">
+  <div class="in">
+    <h2 contenteditable="true">「この人の言葉だ」と<br>感じてもらえる文章を。</h2>
+    <p contenteditable="true">一般的なAI文章サービスは、整った文を出してくれます。日本語としては正しいし、見た目もそれっぽい。でも読むと、どこか空気がない。誰が書いても同じ文章になってしまいます。</p>
+    <p contenteditable="true">読み手が知りたいのは、きれいにまとまった解説ではありません。「この人はどういう人なのか」「何を考えているのか」です。</p>
+    <p contenteditable="true">本サービスでは、単に記事を自動生成するのではなく、あなたの話し方、判断の癖、問題意識、温度感まで反映した「専用AI」を一緒につくります。</p>
+    <p contenteditable="true">同じテーマでも、書き方はお一人おひとり違います。制度から入る方もいれば、現場で出会った一人の話から入る方もいる。まっすぐ強く言い切る方もいれば、静かに事実を積み上げる方もいる。</p>
+    <p contenteditable="true">私たちは、過去の発信や演説、SNS、動画などをもとに、あなたの言葉のクセや重心を丁寧に読み取ります。どこで熱が乗るのか、何を大事にしているのか、逆に何を言うと急に借り物っぽくなるのか。そこまで見たうえで、あなたの延長として機能するAIを設計します。</p>
+    <div class="ia"><div class="ei" onclick="ri(this)"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='260'%3E%3Crect width='780' height='260' rx='8' fill='%23f7fafc'/%3E%3Ctext x='390' y='125' text-anchor='middle' fill='%23a0aec0' font-family='sans-serif' font-size='15'%3EProcess Diagram%3C/text%3E%3Ctext x='390' y='148' text-anchor='middle' fill='%23cbd5e0' font-family='sans-serif' font-size='11'%3EClick to replace%3C/text%3E%3C/svg%3E" alt="Process"></div></div>
+    <h3 contenteditable="true">つくり方</h3>
+    <div class="sps">
+      <div class="sp"><div contenteditable="true"><strong>ヒアリング</strong><br>過去の発信・演説・価値観を丁寧にお聞きします。どういう場面で感情が動くか、何に対して強く言い切るか。表記の癖まで把握させてください。</div></div>
+      <div class="sp"><div contenteditable="true"><strong>専用AI設計</strong><br>お聞きした内容をもとに、あなた専用のAIを構築します。既製品のChatGPTとは根本的に違います。一から仕立てるオーダーメイドです。</div></div>
+      <div class="sp"><div contenteditable="true"><strong>定期メンテナンス</strong><br>AIは放置するとブレていきます。植木屋が余計な枝を定期的に切るように、あなたのAIを手入れし続けます。</div></div>
+    </div>
+    <h3 contenteditable="true">使い方</h3>
+    <p contenteditable="true">運用が軌道に乗れば、気になったニュースのURLと一言の感想を送るだけです。それだけで、あなたらしい記事のたたき台が届きます。今までツイートで終わっていた反応が、記事として残っていく。その積み重ねが、発信を資産に変えていきます。</p>
+  </div>
+</section>
+
+<section class="s" data-l="4. AI Smell Elimination">
+  <div class="in">
+    <h2 contenteditable="true">なぜ「本人の文章」に見えるのか<br>— プロンプト設計の中身</h2>
+    <p contenteditable="true">通常のAIには独特の癖があります。私たちのプロンプトは、それを一つずつ構造的に排除しています。</p>
+    <table class="tbl">
+      <thead><tr><th contenteditable="true">通常のAIが出す癖</th><th contenteditable="true">本サービスの排除方法</th></tr></thead>
+      <tbody>
+        <tr><td contenteditable="true">「結論から言います。」で始まる</td><td contenteditable="true">定番導入フレーズ禁止。個人の感覚から入る構成に</td></tr>
+        <tr><td contenteditable="true">語尾が連続する</td><td contenteditable="true">同じ語尾の2回連続を禁止。体言止め・疑問形・倒置を混ぜる</td></tr>
+        <tr><td contenteditable="true">箇条書きで7項目を羅列</td><td contenteditable="true">数を絞り「なぜそう考えるか」の理由を添える</td></tr>
+        <tr><td contenteditable="true">固有名詞をぼかす</td><td contenteditable="true">具体的な名前・出典を明記。書けないなら使わない</td></tr>
+        <tr><td contenteditable="true">意見と事実が曖昧</td><td contenteditable="true">意見は「私は〜と考えています」、事実は出典明記で分離</td></tr>
+        <tr><td contenteditable="true">感情がない</td><td contenteditable="true">感情を具体的状況と結びつける。引っかかりを残す</td></tr>
+        <tr><td contenteditable="true">実在しない体験を創作</td><td contenteditable="true">URL起点。書かれていない部分は勝手に創作しない</td></tr>
+        <tr><td contenteditable="true">もっともらしい嘘</td><td contenteditable="true">数字・法律名は裏取り必須。URLが書けない情報は使わない</td></tr>
+      </tbody>
+    </table>
+    <h3 contenteditable="true">2段階出力 — いきなり本文を書かない</h3>
+    <p contenteditable="true">まず「プロット」と「参考リンク一覧」をお出しします。参考リンクは媒体名・記事タイトル・URLの3点セットが必須。ご確認いただき「OK」が出てから本文を生成します。</p>
+    <h3 contenteditable="true">5種のリスクチェック</h3>
+    <ul class="rc">
+      <li data-n="1" contenteditable="true"><strong>固有名詞・表記ゆれ</strong> — 人名・団体名・制度名の表記が正しいか</li>
+      <li data-n="2" contenteditable="true"><strong>事実関係</strong> — 数字・法律名・日付に裏取りが必要な箇所</li>
+      <li data-n="3" contenteditable="true"><strong>指示外の追加内容</strong> — 指示にない論点が混入していないか</li>
+      <li data-n="4" contenteditable="true"><strong>脚色・創作</strong> — 実在しない会話・体験が書かれていないか</li>
+      <li data-n="5" contenteditable="true"><strong>AI臭・均質リズム</strong> — 文の型が続きすぎていないか</li>
+    </ul>
+  </div>
+</section>
+
+<section class="s" data-l="5. Before / After">
+  <div class="in">
+    <h2 contenteditable="true">同じテーマで比べてください</h2>
+    <p contenteditable="true">同じニュースを起点にしたとき、通常のChatGPTと本サービスでどう違うか。並べてご覧ください。</p>
+    <h3 contenteditable="true">比較1: 少子化についての冒頭</h3>
+    <p contenteditable="true" style="font-size:13px;color:var(--txt-l);margin-bottom:12px">起点: 厚生労働省「人口動態統計速報」（2025年の出生数が過去最少を更新）</p>
+    <div class="cg">
+      <div class="cb bad">
+        <div class="tg2" contenteditable="true">Before: 通常のChatGPT</div>
+        <blockquote contenteditable="true">少子化は我が国が直面する深刻な課題です。出生率の低下は社会保障制度の持続可能性や地域社会の維持に大きな影響を与える問題です。子育て支援の充実や働き方改革、教育費の負担軽減など、総合的な対策が求められています。国と自治体、企業が連携し、安心して子どもを産み育てられる環境を整備していくことが重要です。</blockquote>
+        <div class="nt" contenteditable="true">教科書のダイジェスト。誰が書いても同じ。書き手の顔が見えない。</div>
+      </div>
+      <div class="cb good">
+        <div class="tg2" contenteditable="true">After: 本サービス</div>
+        <blockquote contenteditable="true">厚労省が2025年の出生数速報を出した。72万人を割り込んで過去最少。数字としてはもう驚かなくなっている自分がいる。それがまずいと思う。「2人目は気持ちの問題じゃなくて、お金の問題なんです」——地元で何度も聞いてきた声が、また頭をよぎる。政策の議論はいつも制度設計から入るけれど、あの一言にどう答えるか。そこから始めないと届かないんじゃないか。</blockquote>
+        <div class="nt" contenteditable="true">実在する統計を起点に、本人が過去に聞いた声を引用。数字→感情→問題提起の流れ。</div>
+      </div>
+    </div>
+    <div class="rf" contenteditable="true"><strong>適用ルール:</strong> ◆9 事実は公的情報に基づく（厚労省速報が起点）/ ◆5 感情は具体的状況と結びつける / ◆4 同じ語尾を2回連続させない / ◆14 書かれていない部分を勝手に創作しない（過去に聞いた声を素材として使用）</div>
+
+    <h3 contenteditable="true">比較2: 政策提案の部分</h3>
+    <div class="cg">
+      <div class="cb bad">
+        <div class="tg2" contenteditable="true">Before: 通常のChatGPT</div>
+        <blockquote contenteditable="true">以下の点が重要です。<br>・物価高と実質賃金の問題<br>・社会保障の持続性<br>・子育て・教育費の構造問題<br>・防災・インフラの老朽化<br>・安全保障環境の変化<br>・行政の無駄と利権構造<br>・外国資本の流入対策</blockquote>
+        <div class="nt" contenteditable="true">7項目を羅列。政策メニューのコピペ感。書き手の判断が見えない。</div>
+      </div>
+      <div class="cb good">
+        <div class="tg2" contenteditable="true">After: 本サービス</div>
+        <blockquote contenteditable="true">突き詰めると3つだと考えている。一つ目は、避難計画の見直し。全国一律のマニュアルでは、沿岸部と内陸部の差が見えなくなる。二つ目は、要配慮者の把握。災害時に自力で動けない方が地域に何人いるか、担当者ですら正確に把握できていないケースがある。三つ目は、備蓄の分散化。大きな倉庫に集中させると、道路が寸断された瞬間に全部使えなくなる。</blockquote>
+        <div class="nt" contenteditable="true">数を3つに絞り、それぞれに「なぜそう考えるか」がある。書き手の判断が見える。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-l="6. Fact-Check Design">
+  <div class="in">
+    <h2 contenteditable="true">ファクトミスを防ぐ仕組み</h2>
+    <p contenteditable="true">発信で一番怖いのは、事実の間違いです。AIは平然と嘘をつくことがあります。そのまま出してしまえば、積み上げてきた信頼を一瞬で失います。だから私たちは、ここに一番力を入れています。</p>
+    <ul contenteditable="true" style="margin:14px 0 14px 20px;color:var(--txt-l)">
+      <li>記事の起点は必ず実在するニュース記事のURL</li>
+      <li>参考情報は媒体名・記事タイトル・URLの3点セットで提示</li>
+      <li>URLが書けない情報源はリストに入れない</li>
+      <li>数字・日付・固有名詞・法律名は裏取り</li>
+      <li>思想部分は引用せず、ご本人の価値観で再構成</li>
+    </ul>
+    <div class="ia"><div class="ei" onclick="ri(this)"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='240'%3E%3Crect width='780' height='240' rx='8' fill='%23f7fafc'/%3E%3Ctext x='390' y='115' text-anchor='middle' fill='%23a0aec0' font-family='sans-serif' font-size='15'%3EFact-check Flow%3C/text%3E%3Ctext x='390' y='138' text-anchor='middle' fill='%23cbd5e0' font-family='sans-serif' font-size='11'%3EClick to replace%3C/text%3E%3C/svg%3E" alt="Fact Check"></div></div>
+  </div>
+</section>
+
+<section class="s" data-l="7. 80-Point Philosophy">
+  <div class="in">
+    <h2 contenteditable="true">あえて100点ではなく、<br>80点を目指す理由</h2>
+    <p contenteditable="true">AIで100点を目指すとどうなるか。毎回、同じような文章しか出なくなります。構文が揃い、語尾が揃い、締め方が揃う。完璧に見えるほど「AIだな」と感じさせてしまう。これはAIの構造的な特性です。</p>
+    <p contenteditable="true">だから私たちは、あえて80点の下書きをお届けします。</p>
+    <p contenteditable="true">80点で届くから、一言添えるだけで90点になる。「ここを直して」と指示すれば95点にもなる。この余白に意味があります。完璧すぎない下書きだからこそ、最後にあなたの手が入る余地がある。それが「この人は自分で考えて書いている」という印象につながっていきます。</p>
+    <div class="ia"><div class="ei" onclick="ri(this)"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='220'%3E%3Crect width='780' height='220' rx='8' fill='%23f7fafc'/%3E%3Ctext x='390' y='105' text-anchor='middle' fill='%23a0aec0' font-family='sans-serif' font-size='15'%3E80-point Diagram%3C/text%3E%3Ctext x='390' y='128' text-anchor='middle' fill='%23cbd5e0' font-family='sans-serif' font-size='11'%3EClick to replace%3C/text%3E%3C/svg%3E" alt="80-Point"></div></div>
+  </div>
+</section>
+
+<section class="s" data-l="8. AIO & Accumulation">
+  <div class="in">
+    <h2 contenteditable="true">文章を積み上げることの価値<br>— AIOという新しい課題</h2>
+    <p contenteditable="true">記事を毎日積み上げていくと、いくつかのことが起き始めます。検索されたときに見つかる。初めて名前を知った方が考えを読める。記者やメディアが取材の参考にする。SNSでの発言が切り取られたとき、記事に誘導できる。</p>
+    <p contenteditable="true">そしてもう一つ、今まさに大きく変わりつつあることがあります。ChatGPTやPerplexityに「この候補者はどんな人？」と聞く方が増えています。AIが回答を組み立てるとき参照するのは、まとまった文章です。あなたの考えが蓄積されていなければ、AIはあなたについて正確に答えられません。</p>
+    <div class="sts">
+      <div class="st"><div class="nm" contenteditable="true">8.8億人</div><div class="ds" contenteditable="true">ChatGPT月間利用者</div></div>
+      <div class="st"><div class="nm" contenteditable="true">42.9%</div><div class="ds" contenteditable="true">日本の10代のChatGPT利用率<br>(Yahoo検索 31.7%超)</div></div>
+      <div class="st"><div class="nm" contenteditable="true">25%減</div><div class="ds" contenteditable="true">従来型検索の減少予測<br>(2026年 Gartner)</div></div>
+      <div class="st"><div class="nm" contenteditable="true">ほぼゼロ</div><div class="ds" contenteditable="true">AIO対策をしている<br>政治家の数</div></div>
+    </div>
+    <p contenteditable="true">「もっと高性能なAIが出てから始めればいい」——そうお考えになるかもしれません。でもそれでは遅いのです。蓄積がなければ、どれだけAIが進化しても材料がありません。今から積み重ねた方が、確実に有利になります。</p>
+  </div>
+</section>
+
+<section class="s" data-l="9. Pricing">
+  <div class="in">
+    <h2 contenteditable="true">費用</h2>
+    <div class="pc">
+      <div class="am" contenteditable="true">90万円</div>
+      <div class="dt" contenteditable="true">30万円 × 3ヶ月</div>
+      <ul class="il">
+        <li contenteditable="true">初回ヒアリング・AI設計</li>
+        <li contenteditable="true">テスト運用・品質チェック</li>
+        <li contenteditable="true">定期ミーティング</li>
+        <li contenteditable="true">運用サポート・AI調整</li>
+      </ul>
+    </div>
+    <p contenteditable="true">月30万円は、AIのライセンス料ではありません。あなた専用のチームが毎日稼働し、あなたらしい発信を維持し続けるための対価です。</p>
+    <h3 contenteditable="true">他の選択肢との比較</h3>
+    <div>
+      <div class="cr"><div><div class="n" contenteditable="true">ライター外注 月30本</div><div class="t" contenteditable="true">自分の言葉にはなりにくい</div></div><div class="p" contenteditable="true">45〜90万円</div></div>
+      <div class="cr"><div><div class="n" contenteditable="true">SNS運用代行</div><div class="t" contenteditable="true">noteやAIOはカバーしない</div></div><div class="p" contenteditable="true">20〜30万円</div></div>
+      <div class="cr"><div><div class="n" contenteditable="true">全部自分で書く</div><div class="t" contenteditable="true">時間が最大のコスト</div></div><div class="p" contenteditable="true">月60〜90時間</div></div>
+      <div class="cr hl"><div><div class="n" contenteditable="true">本サービス</div><div class="t" contenteditable="true">記事・打ち合わせ・AIO設計込み</div></div><div class="p" contenteditable="true">月30万円</div></div>
+    </div>
+    <h3 contenteditable="true">3ヶ月の流れ</h3>
+    <div class="tl">
+      <div class="ti"><div class="mo" contenteditable="true">1ヶ月目</div><p contenteditable="true">徹底的にお聞きします。思想、スタンス、NGライン。そこからAIを作ります。</p></div>
+      <div class="ti"><div class="mo" contenteditable="true">2ヶ月目</div><p contenteditable="true">毎日出す。ズレがあれば潰す。精度を上げていきます。</p></div>
+      <div class="ti"><div class="mo" contenteditable="true">3ヶ月目</div><p contenteditable="true">安定。ほぼそのままお出しできる状態を目指します。</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-l="10. FAQ">
+  <div class="in">
+    <h2 contenteditable="true">よくあるご質問</h2>
+    <div class="fi op"><div class="fq" onclick="tf(this)"><span contenteditable="true">AIっぽくなりませんか？</span></div><div class="fa"><p contenteditable="true">あなた固有の文体・語り口・判断の癖を学習した専用AIを構築します。さらにAIに共通する癖を一つずつ排除するルールを組み込んでいます。公開記事に「AIっぽい」との指摘は出ていません。</p></div></div>
+    <div class="fi"><div class="fq" onclick="tf(this)"><span contenteditable="true">自分と違う考えを書かれませんか？</span></div><div class="fa"><p contenteditable="true">初回で価値観・判断基準・NGラインを丁寧に設定します。本文の前に必ずプロットをお出しし、ご確認後に本文に進みます。</p></div></div>
+    <div class="fi"><div class="fq" onclick="tf(this)"><span contenteditable="true">嘘の情報が混ざりませんか？</span></div><div class="fa"><p contenteditable="true">記事の起点は実在するニュースのURLです。参考情報は媒体名・タイトル・URLの3点セットで明示。数字・法律名は裏取りを行い、5種のリスクチェックを実施します。</p></div></div>
+    <div class="fi"><div class="fq" onclick="tf(this)"><span contenteditable="true">テーマはどうやって決めますか？</span></div><div class="fa"><p contenteditable="true">ご自身で送っていただいても、こちらからAIOの観点でご提案することもできます。テーマ提案はこのサービスの価値の一つです。</p></div></div>
+    <div class="fi"><div class="fq" onclick="tf(this)"><span contenteditable="true">記事は毎日出ますか？</span></div><div class="fa"><p contenteditable="true">目標は毎日1本です。テーマをお伝えいただくだけで、あなたらしいたたき台が届きます。数箇所確認すれば公開できる状態です。</p></div></div>
+    <div class="fi"><div class="fq" onclick="tf(this)"><span contenteditable="true">解約後はどうなりますか？</span></div><div class="fa"><p contenteditable="true">専用AIの設定はお渡しします。ただしメンテナンスが止まると品質は徐々にブレていきます。</p></div></div>
+  </div>
+</section>
+
+<section class="s" data-l="11. Summary">
+  <div class="in">
+    <h2 contenteditable="true">効率化ではなく、<br>伝わり方の改善です。</h2>
+    <p contenteditable="true">AIを使えば早く作れる。量産もできる。でも政治の発信は、効率化だけで終わると危険です。速く出せても薄くなったら意味がない。整っていても、ご本人が消えてしまったら逆効果です。</p>
+    <p contenteditable="true">だからこそ、AIは表に出しません。前に出るのは、あくまであなた自身です。AIは黒子として、あなたの輪郭をもっと濃くするために使う。</p>
+    <p contenteditable="true">積み上げてきた活動と実感を、きちんと伝わる形に変えたい。しかも、あなたらしさを失わずに。そこまでやって初めて意味があるサービスだと考えています。</p>
+  </div>
+</section>
+
+<section class="s cta" data-l="12. CTA">
+  <div class="in">
+    <h2 contenteditable="true">まずは一度、お話しさせてください。</h2>
+    <p contenteditable="true">動画、SNS、ブログ、演説原稿、活動報告。<br>今の発信状況を見せていただければ、どこまで本人らしさを残したまま発信を強くできるか、具体的にご提案します。</p>
+    <button class="cta-btn" contenteditable="true">お問い合わせはこちら</button>
+  </div>
+</section>
+
+</div>
+
+<input type="file" id="ii" class="hi2" accept="image/*">
+<div id="toast"></div>
+
+<script>
+const H='7fde4dad022931c85b39ba07f0837fd76f3434f57432b03db026e445ae6e5f6e';
+async function s256(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+async function auth(){const h=await s256(document.getElementById('pw').value);if(h===H){document.getElementById('lock').classList.add('off');document.getElementById('lp').classList.add('on');document.getElementById('tb').style.display='flex';document.body.classList.add('au');sessionStorage.setItem('a','1')}else{document.getElementById('err').textContent='Incorrect passcode';document.getElementById('pw').value='';document.getElementById('pw').focus()}}
+document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')auth()});
+if(sessionStorage.getItem('a')==='1'){document.getElementById('lock').classList.add('off');document.getElementById('lp').classList.add('on');document.getElementById('tb').style.display='flex';document.body.classList.add('au')}
+
+function X(c,v){c==='formatBlock'?document.execCommand('formatBlock',false,'<'+v+'>'):document.execCommand(c,false,v||null)}
+let ci=null;const ii=document.getElementById('ii');
+function ri(c){ci=c;ii.click()}
+ii.addEventListener('change',e=>{const f=e.target.files[0];if(!f||!ci)return;const r=new FileReader();r.onload=ev=>{ci.querySelector('img').src=ev.target.result};r.readAsDataURL(f);ii.value=''});
+function tf(el){el.closest('.fi').classList.toggle('op')}
+
+function expH(){const c=document.documentElement.cloneNode(true);['#tb','#lock','#ii','#toast','script'].forEach(s=>{c.querySelectorAll(s).forEach(e=>e.remove())});c.querySelectorAll('[contenteditable]').forEach(e=>e.removeAttribute('contenteditable'));c.querySelectorAll('[onclick]').forEach(e=>e.removeAttribute('onclick'));const l=c.querySelector('#lp');if(l){l.style.display='block';l.classList.add('on')}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['<!DOCTYPE html>\n<html lang="ja">\n'+c.innerHTML+'\n</html>'],{type:'text/html;charset=utf-8'}));a.download='lp-export.html';a.click();toast('HTML exported')}
+function expT(){let t='';document.querySelectorAll('.s').forEach(s=>{t+='===== '+(s.dataset.l||'')+' =====\n\n';s.querySelectorAll('h1,h2,h3,p,li,td,th,blockquote,.nm,.ds,.mo,.tg2,.nt,.n,.p,.t,.am,.dt').forEach(e=>{const x=e.textContent.trim();if(x)t+=x+'\n'});t+='\n\n'});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain;charset=utf-8'}));a.download='lp-text.txt';a.click();toast('Text exported')}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey){switch(e.key){case'b':e.preventDefault();X('bold');break;case'i':e.preventDefault();X('italic');break;case'u':e.preventDefault();X('underline');break;case's':e.preventDefault();expH();break}}});
+</script>
+</body>
+</html>
