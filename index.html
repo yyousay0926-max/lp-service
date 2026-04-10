@@ -173,6 +173,36 @@ body.au{padding-top:50px}
 #tb .clr-b{background:#007bff}
 #tb .clr-x{background:transparent;font-size:11px;width:auto;padding:4px 8px;border:1px solid rgba(255,255,255,.4)}
 
+/* Color picker popup */
+.cp-wrap{position:relative;display:inline-block}
+.cp-btn{display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:none;color:#fff;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:15px;font-weight:700;font-family:inherit;transition:background .15s;line-height:1}
+.cp-btn:hover{background:rgba(255,255,255,.15)}
+.cp-bar{width:16px;height:3px;border-radius:1px}
+.cp-pop{display:none;position:absolute;top:100%;left:0;background:#fff;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.3);padding:12px;z-index:2000;width:232px}
+.cp-pop.on{display:block}
+.cp-pop .cp-label{font-size:11px;color:#5f6368;font-weight:600;margin:0 0 6px;padding:0}
+.cp-pop .cp-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-bottom:10px}
+.cp-pop .cp-cell{width:18px;height:18px;border-radius:3px;border:1px solid rgba(0,0,0,.1);cursor:pointer;transition:transform .1s,box-shadow .1s}
+.cp-pop .cp-cell:hover{transform:scale(1.3);box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:1;position:relative}
+.cp-pop .cp-cell.active{box-shadow:0 0 0 2px #1a73e8;border-color:transparent}
+.cp-pop .cp-custom{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid #e0e0e0}
+.cp-pop .cp-custom label{font-size:11px;color:#5f6368;white-space:nowrap}
+.cp-pop .cp-custom input[type="color"]{width:28px;height:24px;border:1px solid #ccc;border-radius:4px;padding:1px;cursor:pointer;background:none}
+.cp-pop .cp-reset{background:none;border:1px solid #dadce0;border-radius:4px;padding:4px 10px;font-size:11px;color:#5f6368;cursor:pointer;font-family:inherit}
+.cp-pop .cp-reset:hover{background:#f1f3f4}
+
+/* Font size selector */
+.fs-wrap{position:relative;display:inline-flex;align-items:center;gap:2px}
+.fs-display{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;padding:3px 6px;border-radius:4px;font-size:12px;width:36px;text-align:center;cursor:pointer;font-family:inherit}
+.fs-display:hover{background:rgba(255,255,255,.2)}
+.fs-btn{background:transparent;border:none;color:#fff;padding:2px 6px;cursor:pointer;font-size:16px;line-height:1;border-radius:3px;font-family:inherit}
+.fs-btn:hover{background:rgba(255,255,255,.15)}
+.fs-drop{display:none;position:absolute;top:100%;left:0;background:#fff;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.3);padding:6px 0;z-index:2000;width:68px;max-height:280px;overflow-y:auto}
+.fs-drop.on{display:block}
+.fs-drop div{padding:5px 14px;font-size:13px;color:#202124;cursor:pointer;transition:background .1s}
+.fs-drop div:hover{background:#f1f3f4}
+.fs-drop div.active{background:#e8f0fe;color:#1a73e8;font-weight:600}
+
 /* Comments */
 .cmt{position:relative;border-bottom:2px dashed #6c63ff;background:rgba(108,99,255,.08);cursor:pointer;padding:1px 2px;border-radius:2px}
 .cmt:hover .cmt-tip{display:block}
@@ -212,18 +242,25 @@ body.au{padding-top:50px}
   <div class="tg"><button onclick="X('bold')"><b>B</b></button><button onclick="X('italic')"><i>I</i></button><button onclick="X('underline')"><u>U</u></button></div>
   <div class="tg"><button onclick="X('formatBlock','h2')">H2</button><button onclick="X('formatBlock','h3')">H3</button><button onclick="X('formatBlock','p')">P</button></div>
   <div class="tg"><button onclick="X('insertUnorderedList')">List</button><button onclick="X('removeFormat')">Clear</button></div>
-  <div class="tg" title="Text Color">
-    <button style="color:#c53030" onclick="X('foreColor','#c53030')" title="Red text">A</button>
-    <button style="color:#2b6cb0" onclick="X('foreColor','#2b6cb0')" title="Blue text">A</button>
-    <button style="color:#276749" onclick="X('foreColor','#276749')" title="Green text">A</button>
-    <button style="color:#fff" onclick="X('foreColor','#1a2744')" title="Default text">A</button>
+  <div class="tg" title="Font Size">
+    <div class="fs-wrap">
+      <button class="fs-btn" onclick="changeFontSize(-1)" title="Smaller">−</button>
+      <div class="fs-display" onclick="toggleFsDrop()" id="fs-val">16</div>
+      <button class="fs-btn" onclick="changeFontSize(1)" title="Larger">+</button>
+      <div class="fs-drop" id="fs-drop"></div>
+    </div>
   </div>
-  <div class="tg" title="Highlight">
-    <button class="clr clr-y" onclick="hl('hl-y')" title="Yellow highlight"></button>
-    <button class="clr clr-g" onclick="hl('hl-g')" title="Green highlight"></button>
-    <button class="clr clr-r" onclick="hl('hl-r')" title="Red highlight"></button>
-    <button class="clr clr-b" onclick="hl('hl-b')" title="Blue highlight"></button>
-    <button class="clr clr-x" onclick="hlClear()" title="Remove">x</button>
+  <div class="tg" title="Text Color">
+    <div class="cp-wrap">
+      <button class="cp-btn" onclick="toggleCp('fc-pop')" title="Text color"><span>A</span><span class="cp-bar" id="fc-bar" style="background:#1a2744"></span></button>
+      <div class="cp-pop" id="fc-pop"></div>
+    </div>
+  </div>
+  <div class="tg" title="Background Color">
+    <div class="cp-wrap">
+      <button class="cp-btn" onclick="toggleCp('bg-pop')" title="Highlight color" style="position:relative"><span style="background:#fef3cd;padding:0 3px;border-radius:2px">A</span><span class="cp-bar" id="bg-bar" style="background:#fef3cd"></span></button>
+      <div class="cp-pop" id="bg-pop"></div>
+    </div>
   </div>
   <div class="tg">
     <button onclick="addComment()" title="Add comment" style="font-size:16px">💬</button>
@@ -480,7 +517,132 @@ function expT(){let t='';document.querySelectorAll('.s').forEach(s=>{t+='===== '
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
 document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey){switch(e.key){case'b':e.preventDefault();X('bold');break;case'i':e.preventDefault();X('italic');break;case'u':e.preventDefault();X('underline');break;case's':e.preventDefault();expH();break}}});
 
-// Highlight
+// ===== Google Docs-style Color Palette =====
+const CP_COLORS=[
+  // Row 1: Standard
+  ['#000000','#434343','#666666','#999999','#b7b7b7','#cccccc','#d9d9d9','#efefef','#f3f3f3','#ffffff'],
+  // Row 2: Saturated
+  ['#980000','#ff0000','#ff9900','#ffff00','#00ff00','#00ffff','#4a86e8','#0000ff','#9900ff','#ff00ff'],
+  // Row 3-9: Lighter/darker variants
+  ['#e6b8af','#f4cccc','#fce5cd','#fff2cc','#d9ead3','#d0e0e3','#c9daf8','#cfe2f3','#d9d2e9','#ead1dc'],
+  ['#dd7e6b','#ea9999','#f9cb9c','#ffe599','#b6d7a8','#a2c4c9','#a4c2f4','#9fc5e8','#b4a7d6','#d5a6bd'],
+  ['#cc4125','#e06666','#f6b26b','#ffd966','#93c47d','#76a5af','#6d9eeb','#6fa8dc','#8e7cc3','#c27ba0'],
+  ['#a61c00','#cc0000','#e69138','#f1c232','#6aa84f','#45818e','#3c78d8','#3d85c6','#674ea7','#a64d79'],
+  ['#85200c','#990000','#b45f06','#bf9000','#38761d','#134f5c','#1155cc','#0b5394','#351c75','#741b47'],
+  ['#5b0f00','#660000','#783f04','#7f6000','#274e13','#0c343d','#1c4587','#073763','#20124d','#4c1130']
+];
+
+function buildPalette(popId,type){
+  const pop=document.getElementById(popId);
+  pop.innerHTML='';
+  const labels=['Standard','','Light →','','','','','Dark →'];
+  CP_COLORS.forEach((row,ri)=>{
+    if(ri===0){const l=document.createElement('p');l.className='cp-label';l.textContent='標準カラー';pop.appendChild(l)}
+    if(ri===2){const l=document.createElement('p');l.className='cp-label';l.textContent='カスタム';pop.appendChild(l)}
+    const g=document.createElement('div');g.className='cp-grid';
+    row.forEach(c=>{
+      const cell=document.createElement('div');cell.className='cp-cell';cell.style.background=c;
+      if(c==='#ffffff')cell.style.border='1px solid #dadce0';
+      cell.title=c;
+      cell.onclick=(e)=>{e.stopPropagation();applyColor(type,c);closePops()};
+      g.appendChild(cell);
+    });
+    pop.appendChild(g);
+  });
+  // Custom color input
+  const custom=document.createElement('div');custom.className='cp-custom';
+  const inp=document.createElement('input');inp.type='color';inp.value=type==='fc'?'#000000':'#ffff00';
+  inp.onchange=()=>{applyColor(type,inp.value);closePops()};
+  const lbl=document.createElement('label');lbl.textContent='カスタム色';
+  const reset=document.createElement('button');reset.className='cp-reset';
+  reset.textContent=type==='fc'?'リセット（黒）':'なし';
+  reset.onclick=(e)=>{e.stopPropagation();applyColor(type,type==='fc'?'#1a2744':'transparent');closePops()};
+  custom.appendChild(lbl);custom.appendChild(inp);custom.appendChild(reset);
+  pop.appendChild(custom);
+}
+
+function applyColor(type,c){
+  if(type==='fc'){
+    document.execCommand('foreColor',false,c);
+    document.getElementById('fc-bar').style.background=c;
+  }else{
+    if(c==='transparent'){
+      document.execCommand('removeFormat',false,null);
+    }else{
+      document.execCommand('hiliteColor',false,c);
+    }
+    document.getElementById('bg-bar').style.background=c==='transparent'?'#e0e0e0':c;
+  }
+}
+
+function toggleCp(id){
+  const pop=document.getElementById(id);
+  const wasOpen=pop.classList.contains('on');
+  closePops();
+  if(!wasOpen)pop.classList.add('on');
+}
+
+function closePops(){
+  document.querySelectorAll('.cp-pop,.fs-drop').forEach(p=>p.classList.remove('on'));
+}
+
+// Init palettes
+buildPalette('fc-pop','fc');
+buildPalette('bg-pop','bg');
+
+// Close on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.cp-wrap')&&!e.target.closest('.fs-wrap'))closePops();
+});
+
+// ===== Font Size =====
+const FONT_SIZES=[8,9,10,11,12,14,16,18,20,24,28,32,36,48,60,72];
+let currentFontSize=16;
+
+function buildFsDrop(){
+  const drop=document.getElementById('fs-drop');
+  drop.innerHTML='';
+  FONT_SIZES.forEach(s=>{
+    const d=document.createElement('div');
+    d.textContent=s;
+    if(s===currentFontSize)d.className='active';
+    d.onclick=(e)=>{e.stopPropagation();setFontSize(s);closePops()};
+    drop.appendChild(d);
+  });
+}
+
+function toggleFsDrop(){
+  const drop=document.getElementById('fs-drop');
+  const wasOpen=drop.classList.contains('on');
+  closePops();
+  if(!wasOpen){buildFsDrop();drop.classList.add('on')}
+}
+
+function setFontSize(size){
+  currentFontSize=size;
+  document.getElementById('fs-val').textContent=size;
+  document.execCommand('fontSize',false,'7');
+  // execCommand fontSize only supports 1-7, so we override with actual px
+  const fonts=document.querySelectorAll('font[size="7"]');
+  fonts.forEach(f=>{f.removeAttribute('size');f.style.fontSize=size+'px'});
+}
+
+function changeFontSize(delta){
+  const idx=FONT_SIZES.indexOf(currentFontSize);
+  let newIdx=idx+delta;
+  if(idx===-1){
+    // Find nearest
+    newIdx=FONT_SIZES.findIndex(s=>s>=currentFontSize);
+    if(newIdx===-1)newIdx=FONT_SIZES.length-1;
+    newIdx+=delta;
+  }
+  newIdx=Math.max(0,Math.min(FONT_SIZES.length-1,newIdx));
+  setFontSize(FONT_SIZES[newIdx]);
+}
+
+buildFsDrop();
+
+// Legacy highlight support (for existing highlights)
 function hl(cls){const sel=window.getSelection();if(!sel.rangeCount||sel.isCollapsed)return;const range=sel.getRangeAt(0);const span=document.createElement('span');span.className=cls;range.surroundContents(span);sel.removeAllRanges();toast('Highlighted')}
 function hlClear(){const sel=window.getSelection();if(!sel.rangeCount)return;const node=sel.anchorNode.parentElement;if(node&&node.className&&node.className.startsWith('hl-')){const parent=node.parentNode;while(node.firstChild)parent.insertBefore(node.firstChild,node);parent.removeChild(node);toast('Highlight removed')}else{X('removeFormat')}}
 
