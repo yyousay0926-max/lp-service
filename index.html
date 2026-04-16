@@ -23,7 +23,7 @@ body{font-family:var(--f);color:var(--txt);background:var(--bg);line-height:1.9;
 #lock .co{position:absolute;bottom:32px;font-size:13px;opacity:.4}
 
 /* LP hidden */
-#lp{display:block}
+#lp{display:none}
 #lp.on{display:block}
 
 /* Editable */
@@ -261,7 +261,7 @@ body.au{padding-top:50px}
 </head>
 <body>
 
-<div id="lock" class="off">
+<div id="lock">
   <h2>This page is password protected</h2>
   <div class="f">
     <input type="password" id="pw" placeholder="Enter passcode" autocomplete="off">
@@ -305,7 +305,7 @@ body.au{padding-top:50px}
 
 <div id="lp">
 
-<div id="pattern-tabs" style="position:sticky;top:0;z-index:999;background:var(--navy);display:flex;justify-content:center;gap:0;padding:8px 16px;box-shadow:0 2px 10px rgba(0,0,0,.3)">
+<div id="pattern-tabs" style="position:sticky;top:0;z-index:999;background:var(--navy);display:none;justify-content:center;gap:0;padding:8px 16px;box-shadow:0 2px 10px rgba(0,0,0,.3)">
   <button class="ptab active" onclick="switchPattern('A')">A. じっくり説得型</button>
   <button class="ptab" onclick="switchPattern('B')">B. 判断材料型</button>
   <button class="ptab" onclick="switchPattern('C')">C. 要点だけ型</button>
